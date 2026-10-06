@@ -69,6 +69,8 @@ BIM 기반 스캔 계획은 현장이 BIM과 다르면 막히거나 놓치는 �
 2. **새 보상 구현 (아직 안 만듦):** 탐사 정책의 선택이 BIM 기반 계획(`bim_expert.py`)의 다음 지점에 가까울수록 보상
 3. **학습 실행:** Ubuntu PC에서 `ARIADNE_BIM_DIR=maps_train python driver3d.py --world bim`
 
+**주의: `maps_test/`(치과 의원)는 학습에 절대 쓰지 않는다.** 백양누리 BIM을 받기 전까지 시험용으로 남겨 둔 건물이다.
+
 ## 기존 연구와의 차이 (가장 중요)
 
 연구실의 BIM 기반 스캔 계획([Park et al., AutCon 2023](https://doi.org/10.1016/j.autcon.2023.104911))은 숙련 측량사보다 효율적이지만 **현장마다 그 건물의 BIM이 필요**하다.
@@ -148,17 +150,21 @@ BIM 기반 스캔 계획은 현장이 BIM과 다르면 막히거나 놓치는 �
 |---|---|
 | 절차 생성 맵 (수천 개) | 학습 (양의 대부분) |
 | 공개 BIM · 평면도 데이터(HouseExpo 등) · 연구실 다른 BIM | 학습 |
-| **교수님 백양누리 BIM** | **시험** (학습에 쓰지 않음) |
+| **교수님 백양누리 BIM** | **시험** (학습에 쓰지 않음, 확보 여부 확인 중) |
+| **공개 IFC 치과 의원** (`maps_test/`) | **백양누리 확보 전 시험용** (학습에 쓰지 않음) |
 | 창고 · 사무실 · 건설현장 Isaac Sim 환경 | 추가 시험 |
 
-**백양누리 규칙:** 백양누리도 변환은 한다(Isaac Sim 시험장, 상한선 계산용 2.5D). 다만 학습 맵에는 절대 섞지 않는다.
+**시험 건물 규칙:** 시험 건물도 변환은 한다(Isaac Sim 시험장, 상한선 계산용 2.5D). 다만 학습 맵에는 절대 섞지 않는다.
 
 ```
-maps_train/   공개 BIM, 평면도, 절차 생성 맵   ← 학습은 이 폴더만 (ARIADNE_BIM_DIR)
-maps_test/    백양누리                          ← 시험 전용
+maps_train/   공개 IFC(Duplex, DigitalHub) + 평면도 + 절차 생성 맵   ← 학습은 이 폴더만 (ARIADNE_BIM_DIR)
+maps_test/    공개 IFC 치과 의원 (지금)  →  백양누리 (확보되면 추가)   ← 시험 전용
 ```
 
-설정 조정은 다른 시험 맵으로 하고, 백양누리는 마지막에 한 번 제대로 시험한다(백양누리에 맞춘 튜닝 방지).
+- **백양누리 BIM 확보 전:** 치과 의원(1,800 m², 방과 복도가 많은 공공 건물)으로 3~4단계를 진행한다. 연구 논리(학습에 안 쓴 건물에서 BIM 없이 스캔)는 그대로 성립한다.
+- **백양누리 BIM 확보 후:** 같은 방법으로 백양누리를 추가해 시험한다.
+- 설정 조정은 다른 맵으로 하고, 시험 건물은 마지막에 한 번 제대로 시험한다(시험 건물에 맞춘 튜닝 방지).
+- **PRAXIS 실증에는 실제로 들어갈 수 있는 건물의 BIM이 필요하다.** 시뮬레이션과 실제를 같은 건물로 비교해야 하므로, 백양누리(또는 다른 교내 건물) BIM 확보는 계속 추진한다.
 
 ## 단계별 계획
 
@@ -182,12 +188,14 @@ maps_test/    백양누리                          ← 시험 전용
 - 맵마다 BIM 기반 최적 스캔 계획을 계산하고, 탐사 정책이 ②(본 지도)만으로 그 계획을 따라 가도록 학습한다.
 - 지금까지: BIM 기반 계획 코드(`bim_expert.py`)와 비교 시연. 남은 것: 새 보상 구현과 실제 학습(Ubuntu 학습 PC, 수 시간).
 
-### 3. 백양누리 BIM → Isaac Sim 구축 (예정)
+### 3. 시험 건물 BIM → Isaac Sim 구축 (예정)
+
+백양누리 BIM 확보 전에는 공개 IFC 치과 의원으로 진행한다. 방법은 같다.
 
 - IFC → 3D 메시 → Isaac Sim(USD). 단위(mm→m), 충돌, 문 열기, 유리 확인, 시험 구역 밖 막기.
 - 정답: 2D 점유 지도, 3D 표면 정답, BIM 기반 계획 결과(상한선). 시험 구역은 실제 실증 구역과 같게 정한다.
 
-### 4. Isaac Sim 백양누리에서 시험 (예정)
+### 4. Isaac Sim 시험 건물(치과 의원 → 백양누리)에서 시험 (예정)
 
 Go2 3D 모델(학습된 보행) + 학습된 탐사 정책이 BIM 없이 탐사한다.
 
@@ -266,7 +274,8 @@ Go2 3D 모델(학습된 보행) + 학습된 탐사 정책이 BIM 없이 탐사�
 | `ariadne3d/bim_env.py` | BIM 맵 학습 환경 (`--world bim`, 폴더는 `ARIADNE_BIM_DIR`) |
 | `ariadne3d/bim_expert.py` | BIM 기반 계획 (정답 맵을 보고 계산하는 상한선) |
 | `patches/3DOG_Go2-exploration.patch` | 메인 레포에 위 파일 + `driver3d.py`·`eval3d.py`의 `--world bim` 옵션을 한 번에 적용 |
-| `maps_bim/` | 변환된 맵 11장 (공개 IFC) |
+| `maps_train/` | 학습용 맵 8장 (공개 IFC Duplex, DigitalHub) |
+| `maps_test/` | 시험용 맵 3장 (공개 IFC 치과 의원, 백양누리 확보 전 대체) |
 | `docs/` | 연구 목표 정리 문서, 관련 논문 정리 |
 
 ## 사용법 (메인 레포에서)
@@ -276,9 +285,12 @@ cd 3DOG_Go2-exploration
 git apply ../3DOG-bim-demo/patches/3DOG_Go2-exploration.patch
 pip install ifcopenshell
 
-python tools/bim_to_25d.py model.ifc ariadne3d/maps_train
+mkdir -p ariadne3d/maps_train ariadne3d/maps_test
+cp ../3DOG-bim-demo/maps_train/*.npz ariadne3d/maps_train/   # 학습용
+cp ../3DOG-bim-demo/maps_test/*.npz ariadne3d/maps_test/     # 시험용 (학습에 쓰지 않음)
+python tools/bim_to_25d.py model.ifc ariadne3d/maps_train     # 새 IFC 변환
 cd ariadne3d && mkdir -p gifs/go2_turn_3d
-ARIADNE_BIM_DIR=maps_train python eval3d.py ../weights/ariadne3d_go2_turn_3d_ep4000_policy.pth --world bim --n 11 --node_res 2
+ARIADNE_BIM_DIR=maps_test python eval3d.py ../weights/ariadne3d_go2_turn_3d_ep4000_policy.pth --world bim --n 3 --node_res 2
 ```
 
 ## 사용한 공개 IFC
